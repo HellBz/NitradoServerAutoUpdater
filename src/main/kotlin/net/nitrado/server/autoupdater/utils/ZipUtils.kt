@@ -2,7 +2,6 @@ package net.nitrado.server.autoupdater.utils
 
 import mainDir
 import modDownloadFile
-import sun.rmi.runtime.Log
 import java.io.*
 import java.net.URL
 import java.nio.file.FileSystem
