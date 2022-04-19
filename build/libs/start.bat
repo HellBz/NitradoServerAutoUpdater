@@ -1,1 +1,0 @@
-start cmd /k java -jar NitradoServerAutoUpdater-1.0-SNAPSHOT.jar
