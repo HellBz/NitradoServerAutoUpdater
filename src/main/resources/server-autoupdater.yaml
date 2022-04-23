@@ -4,7 +4,9 @@
 # written by HellBz
 #
 
-# For which Launcher is the Mod [curse|technic|ftb|forge]
+# From wich Launcher is the Pack  [curse|technic|ftblauncher|atlauncher]
+# Or for Server-Side Scripting    [vanilla|spigot|bikkit|paper|purpur|verlocity|mohist|spongevanilla]
+# Or for Server-Side Modding      [forge!|magma|spongeforge]
 launcher: curse
 
 # Put In Modpack-ID here
@@ -15,7 +17,7 @@ modpack-folder: /
 
 # If you like a specific Version,
 # put this in or leave blank for latest version
-version: ''
+version: ''%!$
 
 # Enable AutoUpdate ( Disabled, if version != empty )
 autoupdate: false
