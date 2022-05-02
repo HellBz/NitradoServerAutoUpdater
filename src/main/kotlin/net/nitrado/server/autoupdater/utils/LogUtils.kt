@@ -15,6 +15,7 @@ import java.util.*
 class LogUtils {
 
 }
+
 // Define Text Colors
 val TXT_RESET = "\u001B[0m"
 val TXT_BLACK = "\u001B[30m"

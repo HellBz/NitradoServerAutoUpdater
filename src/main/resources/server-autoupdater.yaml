@@ -17,7 +17,7 @@ modpack-folder: /
 
 # If you like a specific Version,
 # put this in or leave blank for latest version
-version: ''%!$
+version: ''
 
 # Enable AutoUpdate ( Disabled, if version != empty )
 autoupdate: false
