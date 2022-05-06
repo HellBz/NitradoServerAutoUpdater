@@ -163,7 +163,7 @@ fun main (args: Array<String>) {
             ex.printStackTrace()
         }
 
-        val tempDataInstaller = listFilesUsingDirectoryStream("$mainDir/temp/")
+        val tempDataInstaller = listFilesinDirectory("$mainDir/temp/")
         tempDataInstaller["files"]?.forEach {
                 file -> file
 
@@ -188,8 +188,8 @@ fun main (args: Array<String>) {
 
         //TODO Copy Temp-Files to Main-Folder
 
-        val serverFiles = listFilesUsingDirectoryStream("$userDir/")
-        val tempDatas = listFilesUsingDirectoryStream("$mainDir/temp/")
+        val serverFiles = listFilesinDirectory("$userDir/")
+        val tempDatas = listFilesinDirectory("$mainDir/temp/")
 
         tempDatas["files"]?.forEach {
                 file -> file
@@ -237,7 +237,7 @@ fun main (args: Array<String>) {
 
     println("START Server")
 
-    val startFiles = listFilesUsingDirectoryStream("$userDir/")
+    val startFiles = listFilesinDirectory("$userDir/")
 
     startFiles["files"]?.forEach {
             file -> file

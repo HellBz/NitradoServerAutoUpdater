@@ -167,7 +167,7 @@ fun cacheFile(cacheFile : String , cacheTime : Int = 3600 ): Boolean {
 }
 
 @Throws(IOException::class)
-fun listFilesUsingDirectoryStream(dir: String?): LinkedHashMap<String, MutableSet<String>> {
+fun listFilesinDirectory(dir: String?): LinkedHashMap<String, MutableSet<String>> {
     val fileList: MutableSet<String> = HashSet()
     val dirList: MutableSet<String> = HashSet()
     val completeList = LinkedHashMap<String, MutableSet<String> >()

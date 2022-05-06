@@ -7,7 +7,7 @@ fun main (args: Array<String>) {
 
     val serverDir = "$userDir/test/"
 
-    val serverFiles = listFilesUsingDirectoryStream(serverDir)
+    val serverFiles = listFilesinDirectory(serverDir)
 
     serverFiles["dirs"]?.forEach { dir ->
         dir
@@ -50,7 +50,7 @@ fun main (args: Array<String>) {
 
     val tempDir = "F:\\Benutzerdaten\\Downloads\\SIMPLE-SERVER-FILES-0.3.18\\SIMPLE-SERVER-FILES-0.3.18\\setup"
 
-    val tempFiles = listFilesUsingDirectoryStream(tempDir)
+    val tempFiles = listFilesinDirectory(tempDir)
 
     tempFiles["dirs"]?.forEach { dir ->
         dir
