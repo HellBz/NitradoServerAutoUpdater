@@ -1,7 +1,5 @@
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import net.nitrado.server.autoupdater.api.curseAPI
 import net.nitrado.server.autoupdater.utils.*
 import net.nitrado.server.autoupdater.utils.ZipFileExample.zip
 import org.yaml.snakeyaml.DumperOptions
@@ -35,8 +33,6 @@ fun main (args: Array<String>) {
     //println( config.getProperty("host")
     //([.0-9]*)-([.0-9]*)-([installer|universal]*).([jar|zip]*)
 
-
-
     logInfo("-----------------------------------------------");
     logInfo(TXT_YELLOW + "|\\| o _|_ __ _  _| _    __  _ _|_" + TXT_RESET);
     logInfo(TXT_YELLOW + "| | |  |_ | (_|(_|(_) o | |(/_ |_" + TXT_RESET);
@@ -65,40 +61,28 @@ fun main (args: Array<String>) {
 
     var entry = JsonObject()
 
+    var currentLoader = net.nitrado.server.autoupdater.api.Base()
+
+    val loader = config?.get("loader") as String
+    if ( loader == "curse" ) {
+        currentLoader = net.nitrado.server.autoupdater.api.Curse()
+    }else{
+        logWarn("No Valid Loader Found")
+        System.exit(0)
+    }
+
+
     if( doupdate || config?.get("autoupdate") == true ){
 
         doupdate = false
         logInfo("Checking for latest Version of Modpack")
 
-        //Check Version for Curse-Pack
-        var modpackID = config?.get("modpack-id") as Int
-        val curseArray = arrayOf("mods", modpackID.toString() , "files", "?pageSize=50" )
-        val curse = curseAPI( curseArray )
-        val curseObj = JsonParser().parse(curse["data"].toString()).asJsonObject
+        val latest_version = currentLoader.latestVersion()
 
-        // println(curseObj.isJsonObject)
 
-        if( curseObj.isJsonObject ){
-
-            val entrys = curseObj["data"] as JsonArray
-
-            for (j in 0 until entrys.size()) {
-                val entry_obj = entrys[j] as JsonObject
-                //System.out.println(  entry_obj.get("serverPackFileId").toString() );
-                if (j == 0) {
-                    entry = entry_obj
-                }
-                if (entry_obj["serverPackFileId"].toString().isNotEmpty()) {
-                    entry = entry_obj
-
-                    break
-                }
-            }
-        }
-        val latest_version = entry.get("id")
 
         logInfo("Last Build is $latest_version" )
-        logInfo("Last Server Build is " + entry.get("serverPackFileId"))
+        logInfo("Last Server Build is " + currentLoader.latestServer() )
 
 
         val yamlConfigData: MutableMap<String, Int> = HashMap()
@@ -134,12 +118,7 @@ fun main (args: Array<String>) {
             e.printStackTrace()
         }
 
-        //TODO Get newest Server-Files
-        val projektId = config?.get("modpack-id") as Int
-        val curseServerArray = arrayOf("mods",  projektId.toString() , "files", entry.get("serverPackFileId").toString() ,  "download-url" )
-        val curseServer = curseAPI(curseServerArray)
-        val curseServerObj = JsonParser().parse(curseServer["data"].toString()).asJsonObject
-        val curseServerFile = curseServerObj["data"].toString().replace("\"", "").trim()
+        var curseServerFile = currentLoader.latestFile()
         logInfo("Download Server-Files from:")
         logInfo("$curseServerFile")
 

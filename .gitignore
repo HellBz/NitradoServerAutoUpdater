@@ -19,3 +19,15 @@ gradle-app.setting
 /test-kopie/
 *.yaml
 /server-autoupdater/*
+
+#Exclude Server-Files
+/config/*
+/mods/*
+/logs/*
+/scripts/*
+/libraries/*
+/server.properties
+/eula.txt
+/*.jar
+/instructions.txt
+/*.json
