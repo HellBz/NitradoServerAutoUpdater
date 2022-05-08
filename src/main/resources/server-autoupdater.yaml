@@ -7,7 +7,7 @@
 # From wich Launcher is the Pack  [curse|technic|ftblauncher|atlauncher]
 # Or for Server-Side Scripting    [vanilla|spigot|bikkit|paper|purpur|verlocity|mohist|spongevanilla]
 # Or for Server-Side Modding      [forge!|magma|spongeforge]
-launcher: curse
+loader: curse
 
 # Put In Modpack-ID here
 modpack-id: 290913
