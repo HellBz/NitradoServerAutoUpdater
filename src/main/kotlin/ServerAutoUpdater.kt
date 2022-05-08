@@ -59,17 +59,28 @@ fun main (args: Array<String>) {
         doupdate = false
     }
 
-    var entry = JsonObject()
-
     var currentLoader = net.nitrado.server.autoupdater.api.Base()
 
     val loader = config?.get("loader") as String
-    if ( loader == "curse" ) {
-        currentLoader = net.nitrado.server.autoupdater.api.Curse()
-    }else{
-        logWarn("No Valid Loader Found")
-        System.exit(0)
+
+    when (loader) {
+        "curse" -> currentLoader = net.nitrado.server.autoupdater.api.Curse()
+        "bukkit" -> currentLoader = net.nitrado.server.autoupdater.api.Base()
+        else -> {
+
+            logError("Warning: $loader is not implemented yet")
+
+            logWarn("No Valid Loader Found")
+            logWarn("From which Launcher is the Pack")
+            logWarn("curse|technic|ftblauncher|atlauncher")
+            logWarn("Or for Server-Side Scripting")
+            logWarn("vanilla|spigot|bikkit|paper|purpur|verlocity|mohist|spongevanilla")
+            logWarn("Or for Server-Side Modding")
+            logWarn("forge|magma|spongeforge")
+            System.exit(0)
+        }
     }
+
 
 
     if( doupdate || config?.get("autoupdate") == true ){
