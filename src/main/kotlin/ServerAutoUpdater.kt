@@ -1,5 +1,3 @@
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import net.nitrado.server.autoupdater.utils.*
 import net.nitrado.server.autoupdater.utils.ZipFileExample.zip
 import org.yaml.snakeyaml.DumperOptions
@@ -27,16 +25,29 @@ val latest = loadYAMLConfig("$mainDir/latest.yaml")
 
 var serverProcess: Process? = null
 
-@Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-fun main (args: Array<String>) {
+
+fun main() {
+
+    var currentLoader = net.nitrado.server.autoupdater.api.Base()
+    currentLoader.jobGreeting()
+
+    val loader = config?.get("loader") as String
+
+    //currentLoader = Class.forName("net.nitrado.server.autoupdater.api.Curse").newInstance() as Base
+
+    when (loader) {
+        "curse" -> currentLoader = net.nitrado.server.autoupdater.api.Curse()
+        "bukkit" -> currentLoader = net.nitrado.server.autoupdater.api.Base()
+        else -> {
+            currentLoader.errorNoLoader(loader)
+        }
+    }
+    logInfo( currentLoader.name )
+    currentLoader.name = "Test"
+    logInfo( currentLoader.name )
 
     //println( config.getProperty("host")
     //([.0-9]*)-([.0-9]*)-([installer|universal]*).([jar|zip]*)
-
-    logInfo("-----------------------------------------------");
-    logInfo(TXT_YELLOW + "|\\| o _|_ __ _  _| _    __  _ _|_" + TXT_RESET);
-    logInfo(TXT_YELLOW + "| | |  |_ | (_|(_|(_) o | |(/_ |_" + TXT_RESET);
-    logInfo("-----------------------------------------------")
 
     if ( !copyConfigFromResource("server-autoupdater.yaml","$mainDir/server-autoupdater.yaml") ) {
         logWarn("Created Main-Config: $mainDir/sample_test.json")
@@ -59,31 +70,7 @@ fun main (args: Array<String>) {
         doupdate = false
     }
 
-    var currentLoader = net.nitrado.server.autoupdater.api.Base()
-
-    val loader = config?.get("loader") as String
-
-    when (loader) {
-        "curse" -> currentLoader = net.nitrado.server.autoupdater.api.Curse()
-        "bukkit" -> currentLoader = net.nitrado.server.autoupdater.api.Base()
-        else -> {
-
-            logError("Warning: $loader is not implemented yet")
-
-            logWarn("No Valid Loader Found")
-            logWarn("From which Launcher is the Pack")
-            logWarn("curse|technic|ftblauncher|atlauncher")
-            logWarn("Or for Server-Side Scripting")
-            logWarn("vanilla|spigot|bikkit|paper|purpur|verlocity|mohist|spongevanilla")
-            logWarn("Or for Server-Side Modding")
-            logWarn("forge|magma|spongeforge")
-            System.exit(0)
-        }
-    }
-
-
-
-    if( doupdate || config?.get("autoupdate") == true ){
+    if( doupdate || config.get("autoupdate") == true ){
 
         doupdate = false
         logInfo("Checking for latest Version of Modpack")

@@ -20,6 +20,8 @@ import java.util.*
 
 class Curse () : Base() {
 
+    override var name: String = "Curse-Loader"
+
     fun API(requestArray: Array<String>): LinkedHashMap<String, String> {
 
         var sendRequest = requestArray.joinToString("/")
@@ -135,6 +137,8 @@ class Curse () : Base() {
 
     override fun latestVersion(): String {
 
+        this.name = "Test"
+
         var version: String? = null
 
         var entry = this.latestGet()
@@ -165,6 +169,10 @@ class Curse () : Base() {
         val curseServerFile = curseServerObj["data"].toString().replace("\"", "").trim()
 
         return curseServerFile
+
+    }
+
+    private fun test() {
 
     }
 }
