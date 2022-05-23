@@ -1,5 +1,4 @@
 import net.nitrado.server.autoupdater.utils.*
-import net.nitrado.server.autoupdater.utils.ZipFileExample.zip
 import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
 import java.io.*
@@ -33,8 +32,6 @@ fun main() {
 
     val loader = config?.get("loader") as String
 
-    //currentLoader = Class.forName("net.nitrado.server.autoupdater.api.Curse").newInstance() as Base
-
     when (loader) {
         "curse" -> currentLoader = net.nitrado.server.autoupdater.api.Curse()
         "bukkit" -> currentLoader = net.nitrado.server.autoupdater.api.Base()
@@ -42,88 +39,44 @@ fun main() {
             currentLoader.errorNoLoader(loader)
         }
     }
-    logInfo( currentLoader.name )
-    currentLoader.name = "Test"
-    logInfo( currentLoader.name )
 
-    //println( config.getProperty("host")
-    //([.0-9]*)-([.0-9]*)-([installer|universal]*).([jar|zip]*)
-
-    if ( !copyConfigFromResource("server-autoupdater.yaml","$mainDir/server-autoupdater.yaml") ) {
+    if (!copyConfigFromResource("server-autoupdater.yaml", "$mainDir/server-autoupdater.yaml")) {
         logWarn("Created Main-Config: $mainDir/sample_test.json")
         logWarn("Please Setup your Configuration-File, Exit Program.")
         System.exit(0)
     }
 
-    var doupdate = false
+    currentLoader.jobGetLocalVersion()
 
-    if ( latest == null ) {
-        //TODO Update
-        logInfo("Latest Version cannot be found, checking for Updates.")
-        doupdate = true
-    }
+    if (currentLoader.doupdate || config.get("autoupdate") == true) {
 
-    if( latest != null ){
-
-        latest.get("latest")
-        logInfo("Found latest Version of Modpack: " + latest.get("latest").toString() )
-        doupdate = false
-    }
-
-    if( doupdate || config.get("autoupdate") == true ){
-
-        doupdate = false
+        currentLoader.doupdate = false
         logInfo("Checking for latest Version of Modpack")
 
-        val latest_version = currentLoader.latestVersion()
+        currentLoader.jobGetCurrentVersion()
 
+        logInfo("Last Build is " + currentLoader.localVersion)
+        logInfo("Last Server Build is " + currentLoader.currentVersion)
 
-
-        logInfo("Last Build is $latest_version" )
-        logInfo("Last Server Build is " + currentLoader.latestServer() )
-
-
-        val yamlConfigData: MutableMap<String, Int> = HashMap()
-        yamlConfigData["latest"] = Integer.parseInt(latest_version.toString())
-        val options = DumperOptions()
-        options.indent = 2
-        options.isPrettyFlow = true
-        options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
-        val configFile = File("$mainDir/latest.yaml")
-        val writer = PrintWriter(configFile)
-        val yaml = Yaml(options)
-        yaml.dump(yamlConfigData, writer)
-
-        if ( latest_version.toString() != latest?.get("latest").toString() )
-            doupdate = true
-        else
-            logInfo("Target-Build is: " + latest?.get("latest").toString() + " and Source-Build is: $latest_version" )
-        logInfo("Exit Auto-Updater, because Versions are the same.")
-
+        if (currentLoader.currentVersion != currentLoader.localVersion) {
+            currentLoader.jobWriteLatestVersionToFile()
+            currentLoader.doupdate = true
+        } else {
+            logInfo("Target-Build is: " + currentLoader.localVersion + " and Source-Build is: " + currentLoader.currentVersion)
+            logInfo("Exit Auto-Updater, because Versions are the same.")
+        }
     }
 
-    if ( doupdate ) {
+    if (currentLoader.doupdate) {
 
-        //TODO Backup current Files
-        logInfo("Start creating Backup of existing Files to:")
-        var backup_zip = "$backupDir/curse_" + latest?.get("latest").toString() + ".zip"
-        logInfo("$backup_zip")
-        try {
-            val directory: File = File( "$userDir/$backupDir/" )
-            if (!directory.exists()) directory.mkdirs()
-            zip(  "$userDir/", "$backup_zip" )
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
 
-        var curseServerFile = currentLoader.latestFile()
-        logInfo("Download Server-Files from:")
-        logInfo("$curseServerFile")
+        currentLoader.jobBackUpFiles()
 
-        //TODO Download newest Version
-        downloadFile( "$curseServerFile", "$mainDir/$modDownloadFile" )
+        currentLoader.jobGetDownloadFile()
 
-        //TODO unpack newest Version
+        currentLoader.jobDownloadFiles()
+
+        //TODO currentLoader.jobUnPackFiles()
         logInfo("Unpack new Pack to Temp-Folder:")
         logInfo("$mainDir/$modDownloadFile")
         try {
@@ -140,19 +93,21 @@ fun main() {
             ex.printStackTrace()
         }
 
+        //TODO currentLoader.jobFindInstaller()
         val tempDataInstaller = listFilesinDirectory("$mainDir/temp/")
-        tempDataInstaller["files"]?.forEach {
-                file -> file
+        tempDataInstaller["files"]?.forEach { file ->
+            file
 
-            val matchForge = Pattern.compile("forge-([.0-9]+)-([.0-9]+)-([universal|installer]+).([jar|zip]+)").matcher(file)
+            val matchForge =
+                Pattern.compile("forge-([.0-9]+)-([.0-9]+)-([universal|installer]+).([jar|zip]+)").matcher(file)
 
             if (matchForge.find()) {
 
-                logInfo( "Find Installer: $file")
+                logInfo("Find Installer: $file")
                 val curseVersionMinecraft = matchForge.group(1)
                 val curseVersionForge = matchForge.group(2)
-                logInfo( "Minecraft-Version: $curseVersionMinecraft")
-                logInfo( "Forge-Version: $curseVersionForge")
+                logInfo("Minecraft-Version: $curseVersionMinecraft")
+                logInfo("Forge-Version: $curseVersionForge")
 
                 val installer = installCurseLoader("$userDir/$mainDir/temp/$file")
             }
@@ -162,49 +117,52 @@ fun main() {
         //TODO overwrite new Files
 
 
-
         //TODO Copy Temp-Files to Main-Folder
 
         val serverFiles = listFilesinDirectory("$userDir/")
         val tempDatas = listFilesinDirectory("$mainDir/temp/")
 
-        tempDatas["files"]?.forEach {
-                file -> file
-            if  (
+        tempDatas["files"]?.forEach { file ->
+            file
+            if (
                 getExt(file).toString() != "bat" &&
                 getExt(file).toString() != "sh" &&
                 /* serverFiles.get("files")?.contains( file ) == true &&  */
                 jarName != file
             ) {
 
-                logInfo( "Cleanup & Copy File: $file" )
+                logInfo("Cleanup & Copy File: $file")
 
-                val toFile: File = File("$userDir/$file" )
-                val fromFile: File = File("$mainDir/temp/$file" )
-                if( toFile.exists() ) Files.delete( toFile.toPath() )
-                if ( file.equals("server-icon.png") )
-                    copyConfigFromResource( "server-icon.png" , "$userDir/server-icon.png" )
+                val toFile: File = File("$userDir/$file")
+                val fromFile: File = File("$mainDir/temp/$file")
+                if (toFile.exists()) Files.delete(toFile.toPath())
+                if (file.equals("server-icon.png"))
+                    copyConfigFromResource("server-icon.png", "$userDir/server-icon.png")
                 else
-                    if( !toFile.exists() ) Files.copy( fromFile.toPath(), toFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    if (!toFile.exists()) Files.copy(
+                        fromFile.toPath(),
+                        toFile.toPath(),
+                        StandardCopyOption.REPLACE_EXISTING
+                    );
 
 
             }
 
         }
-        tempDatas["dirs"]?.forEach {
-                dir -> dir
-            if  (
+        tempDatas["dirs"]?.forEach { dir ->
+            dir
+            if (
             /* serverFiles.get("dirs")?.contains( dir )!! && */
-                ( serverFiles.get("dirs")?.contains( "world" )!! && dir.equals("world") )
+                (serverFiles.get("dirs")?.contains("world")!! && dir.equals("world"))
             ) {
-                println( "Found World: $dir, SKIP" )
-            }else{
+                println("Found World: $dir, SKIP")
+            } else {
 
-                logInfo( "Cleanup & Copy Directory: $dir" )
+                logInfo("Cleanup & Copy Directory: $dir")
 
-                val toDir: File = File("$userDir/$dir" )
-                if( toDir.exists() )  deleteDirectory( toDir )
-                if( !toDir.exists() )  copyDirectory( "$mainDir/temp/$dir" ,"$userDir/$dir" )
+                val toDir: File = File("$userDir/$dir")
+                if (toDir.exists()) deleteDirectory(toDir)
+                if (!toDir.exists()) copyDirectory("$mainDir/temp/$dir", "$userDir/$dir")
             }
         }
 
@@ -216,20 +174,20 @@ fun main() {
 
     val startFiles = listFilesinDirectory("$userDir/")
 
-    startFiles["files"]?.forEach {
-            file -> file
+    startFiles["files"]?.forEach { file ->
+        file
 
-        println( file )
+        println(file)
 
         val matchForge = Pattern.compile("forge-([.0-9]+)-([.0-9]+).([jar|zip]+)").matcher(file)
 
         if (matchForge.find()) {
 
-            logInfo( "Find StartFile: $file")
+            logInfo("Find StartFile: $file")
             val curseVersionMinecraft = matchForge.group(1)
             val curseVersionForge = matchForge.group(2)
-            logInfo( "Minecraft-Version: $curseVersionMinecraft")
-            logInfo( "Forge-Version: $curseVersionForge")
+            logInfo("Minecraft-Version: $curseVersionMinecraft")
+            logInfo("Forge-Version: $curseVersionForge")
 
             startServer("$userDir/$file")
         }
@@ -260,7 +218,7 @@ fun main() {
             try {
                 writer.write(input + System.lineSeparator())
                 writer.flush()
-            } catch  (e: IOException) {
+            } catch (e: IOException) {
                 e.printStackTrace()
             }
         }
@@ -273,6 +231,7 @@ fun main() {
     console.start()
 
 
+}
 
 
 
@@ -335,7 +294,7 @@ fun main() {
     println( matcher.matches().toString() )
 */
 
-}
+
 
 /*
 

@@ -1,13 +1,17 @@
 package net.nitrado.server.autoupdater.api
 
+import backupDir
 import cacheDir
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import config
+import net.nitrado.server.autoupdater.utils.ZipFileExample
 
 import net.nitrado.server.autoupdater.utils.cacheFile
+import net.nitrado.server.autoupdater.utils.logInfo
+import userDir
 
 import java.io.*
 import java.net.HttpURLConnection
@@ -20,7 +24,7 @@ import java.util.*
 
 class Curse () : Base() {
 
-    override var name: String = "Curse-Loader"
+    override var name: String = "Base-Loader"
 
     fun API(requestArray: Array<String>): LinkedHashMap<String, String> {
 
@@ -159,8 +163,53 @@ class Curse () : Base() {
         return version
     }
 
-    override fun latestFile(): String {
+    override fun jobGetCurrentVersion() {
+        var entry = JsonObject()
 
+        //Check Version for Curse-Pack
+        var modpackID = config?.get("modpack-id") as Int
+        val curseArray = arrayOf("mods", modpackID.toString(), "files", "?pageSize=50")
+        val curse = this.API(curseArray)
+        val curseObj = JsonParser().parse(curse["data"].toString()).asJsonObject
+
+        // println(curseObj.isJsonObject)
+
+        if (curseObj.isJsonObject) {
+
+            val entrys = curseObj["data"] as JsonArray
+
+            for (j in 0 until entrys.size()) {
+                val entry_obj = entrys[j] as JsonObject
+                //System.out.println(  entry_obj.get("serverPackFileId").toString() );
+                if (j == 0) {
+                    entry = entry_obj
+                }
+                if (entry_obj["serverPackFileId"].toString().isNotEmpty()) {
+                    entry = entry_obj
+
+                    break
+                }
+            }
+        }
+        this.currentVersion = entry.get("id").toString()
+    }
+
+    override fun jobBackUpFiles() {
+
+        logInfo("Start creating Backup of existing Files to:")
+        var backup_zip = "$backupDir/curse_" + this.localVersion + ".zip"
+        logInfo("$backup_zip")
+        try {
+            val directory: File = File( "$userDir/$backupDir/" )
+            if (!directory.exists()) directory.mkdirs()
+            ZipFileExample.zip("$userDir/", "$backup_zip")
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+
+    }
+
+    override fun jobGetDownloadFile() {
         val projektId = config?.get("modpack-id") as Int
         val curseServerArray = arrayOf("mods",  projektId.toString() , "files", this.latestServer() ,  "download-url" )
 
@@ -168,11 +217,8 @@ class Curse () : Base() {
         val curseServerObj = JsonParser().parse(curseServer["data"].toString()).asJsonObject
         val curseServerFile = curseServerObj["data"].toString().replace("\"", "").trim()
 
-        return curseServerFile
-
+        this.downloadFile = curseServerFile
     }
 
-    private fun test() {
 
-    }
 }
