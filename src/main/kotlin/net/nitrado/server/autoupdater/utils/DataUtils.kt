@@ -1,7 +1,5 @@
 package net.nitrado.server.autoupdater.utils
 
-import java.util.*
-
 
 class DataUtils {
 }
@@ -33,4 +31,23 @@ fun containsMulti(inputString: String, items: Array<String?>): Boolean {
         }
     }
     return found
+}
+
+// with some null and length checking
+fun capitalize(str: String?): String? {
+    return if (str == null || str.length == 0) str else str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase()
+}
+
+fun doesClassExist(name: String?): Boolean {
+    try {
+        val c = Class.forName(name)
+        if (c != null) return true
+    } catch (e: ClassNotFoundException) {
+        // Class not found
+    } catch (e: NoClassDefFoundError) {
+        // Class not found
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+    return false
 }

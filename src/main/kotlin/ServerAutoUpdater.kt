@@ -1,54 +1,52 @@
+
 import net.nitrado.server.autoupdater.utils.*
-import org.yaml.snakeyaml.DumperOptions
-import org.yaml.snakeyaml.Yaml
-import java.io.*
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
+import java.io.BufferedWriter
+import java.io.IOException
+import java.io.OutputStreamWriter
+import java.lang.System.getProperty
 import java.util.*
 import java.util.regex.Pattern
-
-
-const val mainDir = "server-autoupdater"
-const val modDownloadFile = "modpack-download.zip"
-const val configFileName = "server-autoupdater.yaml"
 
 val jarPath: String = FileUntils::class.java.protectionDomain.codeSource.location.toURI().path
 val jarName: String = jarPath.substring(jarPath.lastIndexOf("/") + 1)
 
-val userDir: String = System.getProperty("user.dir")
-val backupDir = "$mainDir/backups"
-val cacheDir = "$mainDir/cache"
+val userDir: String = getProperty("user.dir")
+const val mainDir = "server-autoupdater"
+
+const val backupDir = "$mainDir/backups"
+const val cacheDir = "$mainDir/cache"
+
+const val modDownloadFile = "modpack-download.zip"
+const val configFileName = "server-autoupdater.yaml"
 
 val config = loadConfig()
-val latest = loadYAMLConfig("$mainDir/latest.yaml")
 
 var serverProcess: Process? = null
-
 
 fun main() {
 
     var currentLoader = net.nitrado.server.autoupdater.api.Base()
     currentLoader.jobGreeting()
 
-    val loader = config?.get("loader") as String
+    val loader = config?.get("loader").toString()
+    if ( doesClassExist("net.nitrado.server.autoupdater.api." + capitalize( loader ) ) ){
 
-    when (loader) {
-        "curse" -> currentLoader = net.nitrado.server.autoupdater.api.Curse()
-        "bukkit" -> currentLoader = net.nitrado.server.autoupdater.api.Base()
-        else -> {
-            currentLoader.errorNoLoader(loader)
+        when ( loader ) {
+            "curse" -> currentLoader = net.nitrado.server.autoupdater.api.Curse()
+            "bukkit" -> currentLoader = net.nitrado.server.autoupdater.api.Base()
+            else -> {
+                logError("Warning: $loader is not implemented yet")
+                currentLoader.errorNoLoader()
+            }
         }
+    }else{
+        currentLoader.errorNoLoader()
     }
 
-    if (!copyConfigFromResource("server-autoupdater.yaml", "$mainDir/server-autoupdater.yaml")) {
-        logWarn("Created Main-Config: $mainDir/sample_test.json")
-        logWarn("Please Setup your Configuration-File, Exit Program.")
-        System.exit(0)
-    }
-
+    currentLoader.jobCreateMainConfig()
     currentLoader.jobGetLocalVersion()
 
-    if (currentLoader.doupdate || config.get("autoupdate") == true) {
+    if (currentLoader.doupdate || config?.get("autoupdate") == true) {
 
         currentLoader.doupdate = false
         logInfo("Checking for latest Version of Modpack")
@@ -69,115 +67,32 @@ fun main() {
 
     if (currentLoader.doupdate) {
 
-
         currentLoader.jobBackUpFiles()
 
         currentLoader.jobGetDownloadFile()
 
         currentLoader.jobDownloadFiles()
 
-        //TODO currentLoader.jobUnPackFiles()
-        logInfo("Unpack new Pack to Temp-Folder:")
-        logInfo("$mainDir/$modDownloadFile")
-        try {
+        currentLoader.jobUnPackFiles()
 
-            val zipFile: String = "$mainDir/$modDownloadFile" //your zip file location
-
-            val unzipLocation: String = "$mainDir/temp/" // unzip location
-
-            val df = DecompressFast(zipFile, unzipLocation)
-            df.unzip()
-
-        } catch (ex: Exception) {
-            // some errors occurred
-            ex.printStackTrace()
-        }
-
-        //TODO currentLoader.jobFindInstaller()
-        val tempDataInstaller = listFilesinDirectory("$mainDir/temp/")
-        tempDataInstaller["files"]?.forEach { file ->
-            file
-
-            val matchForge =
-                Pattern.compile("forge-([.0-9]+)-([.0-9]+)-([universal|installer]+).([jar|zip]+)").matcher(file)
-
-            if (matchForge.find()) {
-
-                logInfo("Find Installer: $file")
-                val curseVersionMinecraft = matchForge.group(1)
-                val curseVersionForge = matchForge.group(2)
-                logInfo("Minecraft-Version: $curseVersionMinecraft")
-                logInfo("Forge-Version: $curseVersionForge")
-
-                val installer = installCurseLoader("$userDir/$mainDir/temp/$file")
-            }
-
-        }
+        currentLoader.jobFindInstaller()
 
         //TODO overwrite new Files
 
-
         //TODO Copy Temp-Files to Main-Folder
 
-        val serverFiles = listFilesinDirectory("$userDir/")
-        val tempDatas = listFilesinDirectory("$mainDir/temp/")
-
-        tempDatas["files"]?.forEach { file ->
-            file
-            if (
-                getExt(file).toString() != "bat" &&
-                getExt(file).toString() != "sh" &&
-                /* serverFiles.get("files")?.contains( file ) == true &&  */
-                jarName != file
-            ) {
-
-                logInfo("Cleanup & Copy File: $file")
-
-                val toFile: File = File("$userDir/$file")
-                val fromFile: File = File("$mainDir/temp/$file")
-                if (toFile.exists()) Files.delete(toFile.toPath())
-                if (file.equals("server-icon.png"))
-                    copyConfigFromResource("server-icon.png", "$userDir/server-icon.png")
-                else
-                    if (!toFile.exists()) Files.copy(
-                        fromFile.toPath(),
-                        toFile.toPath(),
-                        StandardCopyOption.REPLACE_EXISTING
-                    );
-
-
-            }
-
-        }
-        tempDatas["dirs"]?.forEach { dir ->
-            dir
-            if (
-            /* serverFiles.get("dirs")?.contains( dir )!! && */
-                (serverFiles.get("dirs")?.contains("world")!! && dir.equals("world"))
-            ) {
-                println("Found World: $dir, SKIP")
-            } else {
-
-                logInfo("Cleanup & Copy Directory: $dir")
-
-                val toDir: File = File("$userDir/$dir")
-                if (toDir.exists()) deleteDirectory(toDir)
-                if (!toDir.exists()) copyDirectory("$mainDir/temp/$dir", "$userDir/$dir")
-            }
-        }
+        currentLoader.jobCopyTempToServer()
 
     }
 
-    //TODO Start Server
+    //TODO currentLoader.jobFindStartFile()
+    currentLoader.jobFindStartFile()
 
-    println("START Server")
+    //println("START Server")
 
     val startFiles = listFilesinDirectory("$userDir/")
 
     startFiles["files"]?.forEach { file ->
-        file
-
-        println(file)
 
         val matchForge = Pattern.compile("forge-([.0-9]+)-([.0-9]+).([jar|zip]+)").matcher(file)
 
@@ -193,6 +108,11 @@ fun main() {
         }
 
     }
+
+    //TODO currentLoader.jobStartServer()
+    currentLoader.jobStartServer()
+
+    //TODO Start Server
 
     logInfo("Server-Starter - LOG-Printer is started")
     logInfo("-----------------------------------------------")
@@ -243,7 +163,7 @@ fun main() {
 
     var projekt_id = 381671 // ATM-6
     projekt_id = config?.get("modpack-id") as Int
-    val curseArray = arrayOf("mods", projekt_id.toString() , "files", "?pageSize=50" )
+    const val curseArray = arrayOf("mods", projekt_id.toString() , "files", "?pageSize=50" )
     val curse = curseAPI( curseArray )
     //val curse = net.nitrado.server.autoupdater.api.curseAPI("mods/$projekt_id/files/?pageSize=50")
 

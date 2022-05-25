@@ -1,13 +1,11 @@
 package net.nitrado.server.autoupdater.api
 
 import mainDir
-import modDownloadFile
 import net.nitrado.server.autoupdater.utils.*
 import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
 import java.io.File
 import java.io.PrintWriter
-import java.util.HashMap
 
 //println( config.getProperty("host")
 //([.0-9]*)-([.0-9]*)-([installer|universal]*).([jar|zip]*)
@@ -24,20 +22,12 @@ open class Base {
 
     open var downloadFile: String? = null
 
+    open var installFile: String? = null
 
+    open var startFile: String? = null
 
-    open fun jobGreeting() {
-
-        logInfo("-----------------------------------------------");
-        logInfo(TXT_YELLOW + "|\\| o _|_ __ _  _| _    __  _ _|_" + TXT_RESET);
-        logInfo(TXT_YELLOW + "| | |  |_ | (_|(_|(_) o | |(/_ |_" + TXT_RESET);
-        logInfo("-----------------------------------------------")
-
-    }
-
-    fun errorNoLoader(loader: String) {
-
-        logError("Warning: $loader is not implemented yet")
+    fun errorNoLoader() {
+        // loader: String
 
         logWarn("No Valid Loader Found")
         logWarn("From which Launcher is the Pack")
@@ -50,9 +40,26 @@ open class Base {
 
     }
 
+    open fun jobGreeting() {
+
+        logInfo("-----------------------------------------------")
+        logInfo("$TXT_YELLOW|\\| o _|_ __ _  _| _    __  _ _|_$TXT_RESET")
+        logInfo("$TXT_YELLOW| | |  |_ | (_|(_|(_) o | |(/_ |_$TXT_RESET")
+        logInfo("-----------------------------------------------")
+
+    }
+
+    open fun jobCreateMainConfig() {
+        if (!copyConfigFromResource("server-autoupdater.yaml", "$mainDir/server-autoupdater.yaml")) {
+            logWarn("Created Main-Config: $mainDir/sample_test.json")
+            logWarn("Please Setup your Configuration-File, Exit Program.")
+            System.exit(0)
+        }
+    }
+
     open fun jobGetLocalVersion() {
-        val latest_yaml = loadYAMLConfig("$mainDir/latest.yaml")
-        if( latest_yaml != null ) this.localVersion = latest_yaml.get("latest").toString()
+        val latestYaml = loadYAMLConfig("$mainDir/latest.yaml")
+        if( latestYaml != null ) this.localVersion = latestYaml.get("latest").toString()
 
         if ( this.localVersion == null ) {
             logInfo("Latest Version cannot be found, checking for Updates.")
@@ -81,15 +88,7 @@ open class Base {
 
     open fun jobGetDownloadFile(): Any = Unit
 
-    open fun jobDownloadFiles() {
-
-        logInfo("Download Server-Files from:")
-        logInfo( this.downloadFile.toString() )
-
-        val downloadThisFile = this.downloadFile
-        downloadFile( "$downloadThisFile" , "$mainDir/$modDownloadFile" )
-
-    }
+    open fun jobDownloadFiles(): Any = Unit
 
     open fun jobUnPackFiles(): Any = Unit
 
@@ -105,16 +104,6 @@ open class Base {
 
     open fun jobStartServer(): Any = Unit
 
-
-
-    open fun API(){}
-
-    open fun latestVersion(): Any = Unit
-
-    open fun latestGet(): Any = Unit
-
-    open fun latestServer(): Any = Unit
-
-
+    open fun api(): Any = Unit
 
 }
