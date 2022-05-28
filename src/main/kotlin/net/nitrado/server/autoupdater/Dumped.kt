@@ -175,3 +175,80 @@ fun listFilesUsingFileWalk(dir: String?, depth: Int): MutableSet<Any>? {
             .collect(Collectors.toSet<Any>())
     }
 }
+
+
+
+
+
+/*
+    println("What is your Name?")
+    val name = readLine()
+    println("Hello, $name")
+
+    var projekt_id = 381671 // ATM-6
+    projekt_id = config?.get("modpack-id") as Int
+    const val curseArray = arrayOf("mods", projekt_id.toString() , "files", "?pageSize=50" )
+    val curse = curseAPI( curseArray )
+    //val curse = net.nitrado.server.autoupdater.api.curseAPI("mods/$projekt_id/files/?pageSize=50")
+
+    println( curse["message"].toString() )
+
+    if ( !curse["code"].equals("200") ) System.exit(0)
+
+    val curseObj = JsonParser().parse(curse["data"].toString()).asJsonObject
+
+    println(curseObj.isJsonObject)
+
+    var entry = JsonObject()
+
+    val entrys = curseObj["data"] as JsonArray
+
+    for (j in 0 until entrys.size()) {
+        val entry_obj = entrys[j] as JsonObject
+        //System.out.println(  entry_obj.get("serverPackFileId").toString() );
+        if (j == 0) {
+            entry = entry_obj
+        }
+        if (entry_obj["serverPackFileId"].toString().isNotEmpty()) {
+            entry = entry_obj
+
+            break
+        }
+    }
+
+    // Get Entry-Datas
+    // println(entry)
+
+    println("Last Build is " + entry.get("id"))
+    println("Last Server Build is " + entry.get("serverPackFileId"))
+
+    //config.setProperty("latest-build", entry.get("serverPackFileId").toString() )
+    //saveConfig(config)
+*/
+
+
+//downloadFile( "$curseServerFile", "$mainDir/$modDownloadFile" )
+
+//val zipContnet = listZipContents("$mainDir/$modDownloadFile")
+//println( zipContnet.toString() )
+
+/*
+    val pattern: Pattern = Pattern.compile("<title>(.*)</title>")
+    val matcher: Matcher = pattern.matcher( zipContnet.toString() )
+    println( matcher.matches().toString() )
+*/
+
+
+
+/*
+
+/*
+
+fun main(args: Array<String>) {
+    println("Hello World!")
+
+    // Try adding program arguments at Run/Debug configuration
+    println("Program arguments: ${args.joinToString()}")
+}
+
+*/

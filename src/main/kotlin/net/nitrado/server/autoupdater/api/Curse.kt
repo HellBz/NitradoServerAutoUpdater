@@ -23,13 +23,14 @@ import java.util.regex.Pattern
 
 class Curse () : Base() {
 
-    override var name: String = "Base-Loader"
+    override var name: String = "Curse-Modpack"
+    var latestServerID: String? = null
 
     override fun jobGetCurrentVersion() {
         var entry = JsonObject()
 
         //Check Version for Curse-Pack
-        var modpackID = config?.get("modpack-id") as Int
+        val modpackID = config?.get("modpack-id") as Int
         val curseArray = arrayOf("mods", modpackID.toString(), "files", "?pageSize=50")
         val curse = this.api(curseArray)
         val curseObj = JsonParser().parse(curse["data"].toString()).asJsonObject
@@ -73,7 +74,8 @@ class Curse () : Base() {
 
     override fun jobGetDownloadFile() {
         val projektId = config?.get("modpack-id") as Int
-        val curseServerArray = arrayOf("mods",  projektId.toString() , "files", this.latestServer() ,  "download-url" )
+        this.latestGetServerID()
+        val curseServerArray = arrayOf("mods",  projektId.toString() , "files", this.latestServerID.toString() ,  "download-url" )
 
         val curseServer = this.api(curseServerArray)
         val curseServerObj = JsonParser().parse(curseServer["data"].toString()).asJsonObject
@@ -116,8 +118,7 @@ class Curse () : Base() {
         tempDataInstaller["files"]?.forEach { file ->
             file
 
-            val matchForge =
-                Pattern.compile("forge-([.0-9]+)-([.0-9]+)-([universal|installer]+).([jar|zip]+)").matcher(file)
+            val matchForge = Pattern.compile("forge-([.0-9]+)-([.0-9]+)-([universal|installer]+).([jar|zip]+)").matcher(file)
 
             if (matchForge.find()) {
 
@@ -182,6 +183,38 @@ class Curse () : Base() {
         }
 
     }
+
+    override fun jobFindStartFile(){
+
+        val startFiles = listFilesinDirectory("$userDir/")
+
+        startFiles["files"]?.forEach { file ->
+
+            val matchForge = Pattern.compile("forge-([.0-9]+)-([.0-9]+).([jar|zip]+)").matcher(file)
+
+            if (matchForge.find()) {
+
+                logInfo("Find StartFile: $file")
+                val curseVersionMinecraft = matchForge.group(1)
+                val curseVersionForge = matchForge.group(2)
+                logInfo("Minecraft-Version: $curseVersionMinecraft")
+                logInfo("Forge-Version: $curseVersionForge")
+
+                this.startFile = file
+
+                return
+            }
+
+        }
+
+    }
+
+    /*
+    override fun jobStartServer(){
+        logError("FAKE START Server" + this.startFile )
+        startServer("$userDir/" + this.startFile )
+    }
+    */
 
     fun api(requestArray: Array<String>): LinkedHashMap<String, String> {
 
@@ -264,7 +297,7 @@ class Curse () : Base() {
         return curse
     }
 
-    private fun latestGet(): JsonObject {
+    private fun latestGetServerID(): JsonObject {
 
         var entry = JsonObject()
 
@@ -273,8 +306,6 @@ class Curse () : Base() {
         val curseArray = arrayOf("mods", modpackID.toString(), "files", "?pageSize=50")
         val curse = this.api(curseArray)
         val curseObj = JsonParser().parse(curse["data"].toString()).asJsonObject
-
-        // println(curseObj.isJsonObject)
 
         if (curseObj.isJsonObject) {
 
@@ -288,36 +319,13 @@ class Curse () : Base() {
                 }
                 if (entry_obj["serverPackFileId"].toString().isNotEmpty()) {
                     entry = entry_obj
+                    this.latestServerID = entry.get("serverPackFileId").toString()
 
                     break
                 }
             }
         }
         return entry
-    }
-
-    private fun latestVersion(): String {
-
-        this.name = "Test"
-
-        var version: String? = null
-
-        var entry = this.latestGet()
-
-        version = entry.get("id").toString()
-
-        return version
-    }
-
-    private fun latestServer(): String {
-
-        var version: String? = null
-
-        var entry = this.latestGet()
-
-        version = entry.get("serverPackFileId").toString()
-
-        return version
     }
 
 

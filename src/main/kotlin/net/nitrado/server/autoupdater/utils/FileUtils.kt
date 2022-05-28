@@ -213,13 +213,15 @@ fun copyDirectory(sourceDirectoryLocation: String, destinationDirectoryLocation:
 fun installCurseLoader( installerFile: String ): Boolean {
 
     try {
-        logInfo("Attempting to download installer from $installerFile")
+        val inputFile = File(installerFile)
+
+        val filename = inputFile.name
+        val basepath = installerFile.replace( filename , "" )
+
+        logInfo("Attempting to use installer from $filename")
 
         logInfo("Starting installation of Loader, installer output incoming")
         logInfo("Check log for installer for more information")
-
-        val filename = basename(installerFile)
-        val basepath = installerFile.replace( filename.toString() , "" )
 
         val installer = ProcessBuilder(
             "java",
@@ -228,14 +230,19 @@ fun installCurseLoader( installerFile: String ): Boolean {
             "nogui",
             "--installServer",
         )
-            .inheritIO()
-            .directory(File("$basepath"))
+            /* .inheritIO() */
+            .directory( File( basepath ) )
             .start()
+
+        val serverLog = Scanner(installer!!.inputStream)
+        while (serverLog.hasNextLine()) {
+            val println = serverLog.nextLine()
+            logInfo(println)
+        }
 
         installer.waitFor()
 
         logInfo("Done installing loader, deleting installer!")
-
 
         logInfo( "Delete: $installer ")
 
@@ -245,9 +252,15 @@ fun installCurseLoader( installerFile: String ): Boolean {
         val installerFileLog: File = File("$installerFile.log" )
         if( installerFileLog.exists() )  Files.delete( installerFileLog.toPath() )
 
-        //installerPath.delete()
+        val installerFileRunBat: File = File( basepath + "run.bat" )
+        if( installerFileRunBat.exists() )  Files.delete( installerFileRunBat.toPath() )
 
-        //checkEULA(basePath)
+
+        val installerFileRunSh: File = File( basepath + "run.sh" )
+        if( installerFileRunSh.exists() )  Files.delete( installerFileRunSh.toPath() )
+
+        val installerFileJavaArgs: File = File( basepath + "user_jvm_args.txt" )
+        if( installerFileJavaArgs.exists() )  Files.delete( installerFileJavaArgs.toPath() )
 
         return true
 
@@ -273,19 +286,18 @@ fun startServer( installerFile: String ): Boolean {
         val basepath = installerFile.replace( filename.toString() , "" )
 
         serverProcess = ProcessBuilder(
-            /* "C:\\Program Files\\Java\\jre1.8.0_311\\bin\\javaw.exe",*/
-            "java",
+            "C:\\Program Files\\Java\\jre1.8.0_311\\bin\\javaw.exe",
+            /*"java",*/
             "-Xmx5G",
             "-Xms1G",
             "-jar",
             installerFile,
             "nogui",
         )
-            //.inheritIO()
+            /* .inheritIO() */
             .directory(File("$basepath"))
             .start()
 
-        // serverProcess.waitFor()
 
         //logInfo("Servert is Crashed")
 

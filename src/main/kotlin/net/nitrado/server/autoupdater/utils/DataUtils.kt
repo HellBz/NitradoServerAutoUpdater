@@ -1,15 +1,27 @@
 package net.nitrado.server.autoupdater.utils
 
+import java.io.File
+import kotlin.math.log
+
 
 class DataUtils {
 }
 
 fun basename(path: String): String? {
-    var filename = path.substring(path.lastIndexOf('/') + 1)
+
+    return File(path).name
+
+    /*
+    println("Basename: " + )
+
+    var isWin = System.getProperty("os.name").toLowerCase().contains("win")
+    var filename = path.substring(  path.lastIndexOf( (if ( isWin ) '\\' else '/' ) ) )
     if (filename == null || filename.equals("", ignoreCase = true)) {
         filename = ""
     }
-    return filename
+    return filename.replace(basefile.name,"" )
+
+     */
 }
 
 fun getExt(fileName: String?): String? {
