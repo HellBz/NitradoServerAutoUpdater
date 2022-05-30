@@ -1,22 +1,11 @@
 
-import net.nitrado.server.autoupdater.utils.*
-import java.lang.System.getProperty
 
-val jarPath: String = FileUntils::class.java.protectionDomain.codeSource.location.toURI().path
-val jarName: String = jarPath.substring(jarPath.lastIndexOf("/") + 1)
-
-val userDir: String = getProperty("user.dir")
-const val mainDir = "server-autoupdater"
-
-const val backupDir = "$mainDir/backups"
-const val cacheDir = "$mainDir/cache"
-
-const val modDownloadFile = "modpack-download.zip"
-const val configFileName = "server-autoupdater.yaml"
+import net.nitrado.server.autoupdater.utils.capitalize
+import net.nitrado.server.autoupdater.utils.doesClassExist
+import net.nitrado.server.autoupdater.utils.loadConfig
+import net.nitrado.server.autoupdater.utils.logError
 
 val config = loadConfig()
-
-var serverProcess: Process? = null
 
 fun main() {
 
@@ -73,8 +62,6 @@ fun main() {
 
     //TODO currentLoader.jobStartServer()
     currentLoader.jobStartServer()
-
-    serverProcess?.waitFor()
 
     currentLoader.jobServerStopped()
 }

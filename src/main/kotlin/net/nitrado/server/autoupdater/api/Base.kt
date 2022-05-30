@@ -1,15 +1,21 @@
 package net.nitrado.server.autoupdater.api
 
-import com.google.gson.annotations.Until
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import config
-import mainDir
 import net.nitrado.server.autoupdater.utils.*
 import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
-import serverProcess
-import userDir
 import java.io.*
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.*
+import java.util.concurrent.TimeUnit
+import kotlin.system.exitProcess
 
 
 //println( config.getProperty("host")
@@ -21,6 +27,12 @@ open class Base {
 
     open var name: String = "Base-Loader"
 
+    open var cache: String?    = "base"
+
+    open var baseurl: String?  = "https://mineversion.top"
+
+    open var apiKey: String?   = "no_key"
+
     open var localVersion: String? = null
 
     open var currentVersion: String? = null
@@ -31,8 +43,12 @@ open class Base {
 
     open var startFile: String? = null
 
+
+
     fun errorNoLoader() {
         // loader: String
+
+        logInfo( mainDir )
 
         logWarn("No Valid Loader Found")
         logWarn("From which Launcher is the Pack")
@@ -41,7 +57,7 @@ open class Base {
         logWarn("vanilla|spigot|bikkit|paper|purpur|verlocity|mohist|spongevanilla")
         logWarn("Or for Server-Side Modding")
         logWarn("forge|magma|spongeforge")
-        System.exit(0)
+        System.exit(1)
 
     }
 
@@ -173,47 +189,160 @@ open class Base {
 
         //TODO REMOVE THIS
 
-        logInfo("Server-Starter - LOG-Printer is started")
-        logInfo("-----------------------------------------------")
-        val serverLog = Scanner(serverProcess!!.inputStream)
-        val logger = Thread {
-            while (serverLog.hasNextLine()) {
-                val println = serverLog.nextLine()
-                println(println)
-            }
-        }
 
-        logger.start()
-        logInfo("Server-Starter - Console-Scanner is started")
-        logInfo("-----------------------------------------------")
-        val stdin = serverProcess!!.outputStream // <- Eh?
-        val writer = BufferedWriter(OutputStreamWriter(stdin))
-        val scanner = Scanner(System.`in`)
-        val console = Thread {
-            while (true) {
-                val input = scanner.nextLine()
-                if (input == "") break
-                //System.out.println( input );
+            val logger = Thread {
+                val serverLog = Scanner(serverProcess!!.inputStream)
+                logInfo("Server-Starter - LOG-Printer is started")
+                logInfo("-----------------------------------------------")
+
+                while (serverLog.hasNextLine()) {
+                    val println = serverLog.nextLine()
+                    println(println)
+                }
+            }
+
+            val console = Thread {
+
+                val stdin = serverProcess!!.outputStream // <- Eh?
+                val writer = BufferedWriter(OutputStreamWriter(stdin))
+                val scanner = Scanner(System.`in`)
+
+                logInfo("Server-Starter - Console-Scanner is started")
+                logInfo("-----------------------------------------------")
+
+                while (true) {
+                    val input = scanner.nextLine()
+                    if (input == "") break
+                    //System.out.println( input );
+                    try {
+                        writer.write(input + System.lineSeparator())
+                        writer.flush()
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
                 try {
-                    writer.write(input + System.lineSeparator())
-                    writer.flush()
+                    writer.close()
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
             }
-            try {
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
+
+        val check_server = Thread {
+            while (true) {
+                try {
+                    TimeUnit.SECONDS.sleep(5)
+                } catch (ex: Exception) {
+                    ex.printStackTrace()
+                }
+                if ( !(serverProcess?.isAlive)!! ) {
+                    logger.stop()
+                    console.stop()
+                    Thread.currentThread().stop()
+                }
             }
         }
-        console.start()
+
+
+        if( serverProcess != null  ) {
+            logger.start()
+            console.start()
+            check_server.start()
+        }
 
     }
     open fun jobServerStopped(){
-        logWarn("Oh Snap, Server is stopped.")
+
+        val exitCode: Int? = serverProcess?.waitFor()
+
+        if ( exitCode == 0 ){
+            logWarn("Server is successfully stopped.")
+            exitProcess( 0 )
+        }else{
+            logError("Server is Crashed with Exit-Code: $exitCode ")
+            exitProcess( 1 )
+        }
     }
 
-    open fun api(): Any = Unit
+    open fun api(requestArray: Array<String>): LinkedHashMap<String, String> {
+
+        var sendRequest = requestArray.joinToString("/")
+        var cacheString = requestArray.joinToString("_")
+        var cacheStringUrl = URLEncoder.encode(cacheString, StandardCharsets.UTF_8.toString())
+
+        val api = LinkedHashMap<String, String>()
+
+        var responseCode = ""
+        var responseMessage = ""
+        var responseData = ""
+
+        val directory: File = File(cacheDir)
+        if (!directory.exists()) directory.mkdirs()
+
+        var curseCacheFile = "$cacheDir/" + this.cache + "_" + cacheStringUrl + ".json"
+
+        if (cacheFile(curseCacheFile, 3600)) {
+
+            try {
+                val configFileContent = String(Files.readAllBytes(Paths.get(curseCacheFile)))
+
+                val cacheObj = JsonParser().parse(configFileContent).asJsonObject
+                if (cacheObj.isJsonObject) {
+
+                    responseCode = "200"
+                    responseMessage = "Fetch from Cache"
+                    responseData = cacheObj.toString()
+                }
+
+            } catch (exception: IllegalStateException) {
+                responseCode = "403"
+                responseMessage = exception.printStackTrace().toString()
+            } catch (exception: FileNotFoundException) {
+                responseCode = "404"
+                responseMessage = exception.printStackTrace().toString()
+            }
+
+        }
+
+        if (responseCode.isEmpty()) {
+
+            try {
+
+                val url = URL(this.baseurl +"$sendRequest")
+                val http = url.openConnection() as HttpURLConnection
+                http.requestMethod = "GET"
+                http.setRequestProperty("Accept", "application/json")
+                http.setRequestProperty("x-api-key", this.apiKey )
+
+                responseCode = http.responseCode.toString()
+                responseMessage = http.responseMessage
+
+                if (http.responseCode == 200) {
+
+                    val reader: Reader = InputStreamReader(http.inputStream, StandardCharsets.UTF_8)
+
+                    if (!reader.toString().trim().isEmpty()) {
+
+                        val datas = JsonParser().parse(reader) as JsonObject
+                        responseData = datas.toString().trim()
+
+                        val writer = BufferedWriter(FileWriter("$cacheDir/" + this.cache + "_" + cacheStringUrl +".json"))
+                        writer.write(responseData)
+
+                        writer.close()
+                    }
+                }
+
+            } catch (exception: FileNotFoundException) {
+                responseCode = "404"
+                responseMessage = exception.printStackTrace().toString()
+            }
+        }
+
+        api["code"] = responseCode
+        api["message"] = responseMessage
+        api["data"] = responseData
+        return api
+    }
 
 }

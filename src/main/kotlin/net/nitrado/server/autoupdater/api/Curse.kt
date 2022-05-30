@@ -1,16 +1,10 @@
 package net.nitrado.server.autoupdater.api
 
-import backupDir
-import cacheDir
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import config
-import jarName
-import mainDir
-import modDownloadFile
 import net.nitrado.server.autoupdater.utils.*
-import userDir
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
@@ -24,6 +18,13 @@ import java.util.regex.Pattern
 class Curse () : Base() {
 
     override var name: String = "Curse-Modpack"
+
+    override var cache: String?    = "curse"
+
+    override var baseurl: String?  = "https://api.curseforge.com/v1/"
+
+    override var apiKey: String?   = "$2a$10\$nA5YAQ2zhPP779caRJp.Bua.8X0j/oGJ7xPQgJTaRYQLgF6Ou4PAq"
+
     var latestServerID: String? = null
 
     override fun jobGetCurrentVersion() {
@@ -216,7 +217,88 @@ class Curse () : Base() {
     }
     */
 
-    fun api(requestArray: Array<String>): LinkedHashMap<String, String> {
+    override fun api(requestArray: Array<String>): java.util.LinkedHashMap<String, String> {
+
+        var sendRequest = requestArray.joinToString("/")
+        var cacheString = requestArray.joinToString("_")
+        var cacheStringUrl = URLEncoder.encode(cacheString, StandardCharsets.UTF_8.toString())
+
+        val api = java.util.LinkedHashMap<String, String>()
+
+        var responseCode = ""
+        var responseMessage = ""
+        var responseData = ""
+
+        val directory: File = File(cacheDir)
+        if (!directory.exists()) directory.mkdirs()
+
+        var curseCacheFile = "$cacheDir/" + this.cache + "_" + cacheStringUrl + ".json"
+
+        if (cacheFile(curseCacheFile, 3600)) {
+
+            try {
+                val configFileContent = String(Files.readAllBytes(Paths.get(curseCacheFile)))
+
+                val cacheObj = JsonParser().parse(configFileContent).asJsonObject
+                if (cacheObj.isJsonObject) {
+
+                    responseCode = "200"
+                    responseMessage = "Fetch from Cache"
+                    responseData = cacheObj.toString()
+                }
+
+            } catch (exception: IllegalStateException) {
+                responseCode = "403"
+                responseMessage = exception.printStackTrace().toString()
+            } catch (exception: FileNotFoundException) {
+                responseCode = "404"
+                responseMessage = exception.printStackTrace().toString()
+            }
+
+        }
+
+        if (responseCode.isEmpty()) {
+
+            try {
+
+                val url = URL(this.baseurl +"$sendRequest")
+                val http = url.openConnection() as HttpURLConnection
+                http.requestMethod = "GET"
+                http.setRequestProperty("Accept", "application/json")
+                http.setRequestProperty("x-api-key", this.apiKey )
+
+                responseCode = http.responseCode.toString()
+                responseMessage = http.responseMessage
+
+                if (http.responseCode == 200) {
+
+                    val reader: Reader = InputStreamReader(http.inputStream, StandardCharsets.UTF_8)
+
+                    if (!reader.toString().trim().isEmpty()) {
+
+                        val datas = JsonParser().parse(reader) as JsonObject
+                        responseData = datas.toString().trim()
+
+                        val writer = BufferedWriter(FileWriter("$cacheDir/" + this.cache + "_" + cacheStringUrl +".json"))
+                        writer.write(responseData)
+
+                        writer.close()
+                    }
+                }
+
+            } catch (exception: FileNotFoundException) {
+                responseCode = "404"
+                responseMessage = exception.printStackTrace().toString()
+            }
+        }
+
+        api["code"] = responseCode
+        api["message"] = responseMessage
+        api["data"] = responseData
+        return api
+    }
+
+    fun api_old(requestArray: Array<String>): LinkedHashMap<String, String> {
 
         var sendRequest = requestArray.joinToString("/")
         var cacheString = requestArray.joinToString("_")

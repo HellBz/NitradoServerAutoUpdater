@@ -1,7 +1,6 @@
 package net.nitrado.server.autoupdater.utils
 
 import config
-import mainDir
 import java.awt.GraphicsEnvironment
 import java.awt.HeadlessException
 import java.io.FileWriter

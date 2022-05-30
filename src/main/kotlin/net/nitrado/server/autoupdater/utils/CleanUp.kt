@@ -1,8 +1,6 @@
 
 package net.nitrado.server.autoupdater.utils
 
-import jarName
-import userDir
 import java.io.File
 
 class CleanUp {

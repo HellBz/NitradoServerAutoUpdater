@@ -7,22 +7,6 @@ import kotlin.math.log
 class DataUtils {
 }
 
-fun basename(path: String): String? {
-
-    return File(path).name
-
-    /*
-    println("Basename: " + )
-
-    var isWin = System.getProperty("os.name").toLowerCase().contains("win")
-    var filename = path.substring(  path.lastIndexOf( (if ( isWin ) '\\' else '/' ) ) )
-    if (filename == null || filename.equals("", ignoreCase = true)) {
-        filename = ""
-    }
-    return filename.replace(basefile.name,"" )
-
-     */
-}
 
 fun getExt(fileName: String?): String? {
     requireNotNull(fileName) { "fileName must not be null!" }

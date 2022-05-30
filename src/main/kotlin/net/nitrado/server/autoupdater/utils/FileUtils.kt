@@ -1,9 +1,6 @@
 package net.nitrado.server.autoupdater.utils
 
-import configFileName
-import mainDir
 import org.yaml.snakeyaml.Yaml
-import serverProcess
 import java.io.*
 import java.net.URL
 import java.nio.file.Files
@@ -12,8 +9,7 @@ import java.nio.file.Paths
 import java.time.Instant
 import java.util.*
 
-
-class FileUntils {
+class FileUtils {
 }
 
 fun downloadFile(dowloadFile: String, toFile: String? = null ){
@@ -32,8 +28,10 @@ fun downloadFile(dowloadFile: String, toFile: String? = null ){
 
     if (toFile != null)
         toLocalFile = toFile
-    else
-        toLocalFile = basename(dowloadFile)
+    else{
+        toLocalFile = File(dowloadFile).name
+    }
+
 
     try {
         BufferedInputStream( URL(dowloadFile).openStream() ).use { `in` ->
@@ -68,13 +66,13 @@ fun loadYAMLConfig(yamlFilePath : String ): Map<String, Any>? {
 fun copyConfigFromResource(localfile :String, copyToFile : String ): Boolean {
 
     val configFile = File( copyToFile )
-    val configFilePath = File( copyToFile.replace( basename(copyToFile).toString() , "" ) )
+    val configFilePath = File( copyToFile.replace( configFile.name.toString() , "" ) )
 
     if (!configFilePath.exists()) configFilePath.mkdirs()
 
     if (!configFile.exists()) {
         try {
-            FileUntils::class.java.classLoader.getResourceAsStream( localfile ).use { `is` ->
+            FileUtils::class.java.classLoader.getResourceAsStream( localfile ).use { `is` ->
                 Files.copy(`is`, Paths.get( copyToFile ))
             }
         } catch (e: IOException) {
@@ -85,52 +83,6 @@ fun copyConfigFromResource(localfile :String, copyToFile : String ): Boolean {
     }else return true
 }
 
-fun loadConfig(): Map<String, Any>? {
-
-    val directory: File = File( mainDir )
-    if (!directory.exists()) directory.mkdirs()
-
-    val configFile = File("$mainDir/$configFileName")
-
-    if (!configFile.exists()) {
-
-        try {
-            FileUntils::class.java.classLoader.getResourceAsStream(configFileName).use { `is` ->
-                Files.copy(`is`, Paths.get("$mainDir/$configFileName"))
-            }
-        } catch (e: IOException) {
-            // An error occurred copying the resource
-        }
-        println("You Standard-Config has generated now. Exit.")
-        System.exit(0)
-
-/*
-        val yamlConfigData: MutableMap<String, Any> = HashMap()
-        yamlConfigData["launcher"] = "curse"
-        yamlConfigData["modpack-id"] = 507137
-        yamlConfigData["latest-version"] = ""
-        yamlConfigData["autoupdate"] = false
-
-        val options = DumperOptions()
-        options.indent = 2
-        options.isPrettyFlow = true
-        // Fix below - additional configuration
-        // Fix below - additional configuration
-        options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
-
-        val writer = PrintWriter(configFile)
-        val yaml = Yaml(options)
-        yaml.dump(yamlConfigData, writer)
-*/
-        //val reader = FileReader(configFile)
-        //props.load(reader);
-
-    }
-
-    val configStream: InputStream = FileInputStream("$mainDir/$configFileName")
-    val yaml = Yaml()
-    return yaml.load<Map<String, Any>?>(configStream)
-}
 
 
 fun saveConfig(config: Properties? = null) {
@@ -279,10 +231,15 @@ fun installCurseLoader( installerFile: String ): Boolean {
 
 fun startServer( installerFile: String ): Boolean {
 
+
+
     try {
         logInfo("Attempting to start Server $installerFile")
 
-        val filename = basename(installerFile)
+        val filename = File(installerFile).name
+        if ( filename != null) {
+            throw FileNotFoundException();
+        }
         val basepath = installerFile.replace( filename.toString() , "" )
 
         serverProcess = ProcessBuilder(
@@ -303,13 +260,14 @@ fun startServer( installerFile: String ): Boolean {
 
         return true
 
-    } catch (e: IOException) {
-        logError("Problem while installing Loader from $installerFile $e")
-        //throw DownloadLoaderException("Problem while installing Loader from $url", e)
+    } catch (e: FileNotFoundException) {
+        logError("The Start-File \"" + File(installerFile).name + "\" not exits. Error: $e")
+        return false
+    }catch (e: IOException) {
+        logError("Problem while start Server from \"" + File(installerFile).name + "\" $e")
         return false
     } catch (e: InterruptedException) {
-        logError("Problem while installing Loader from $installerFile $e")
-        //throw DownloadLoaderException("Problem while installing Loader from $url", e)#
+        logError("Problem while start Server from \"" + File(installerFile).name + "\" $e")
         return false
     }
 

@@ -1,7 +1,5 @@
 package net.nitrado.server.autoupdater.utils
 
-import mainDir
-import modDownloadFile
 import java.io.*
 import java.net.URL
 import java.nio.file.FileSystem
@@ -129,7 +127,7 @@ object ZipFileExample {
     private const val INPUT_FOLDER = "\\"
     private const val ZIPPED_FOLDER = "backup.zip"
 
-    private val jarPath: String = FileUntils::class.java.protectionDomain.codeSource.location.toURI().path
+    private val jarPath: String = FileUtils::class.java.protectionDomain.codeSource.location.toURI().path
     private val jarName: String = jarPath.substring(jarPath.lastIndexOf("/") + 1)
 
     @JvmStatic
@@ -225,7 +223,7 @@ fun unzip(zipFilePath: String?, uncompressedDirectory: String) {
                     val uncompressedFileName = uncompressedDirectory + entry.name
                     val uncompressedFilePath: Path = fileSystem!!.getPath(uncompressedFileName)
 
-                    val baseFilePath = basename( uncompressedFileName )
+                    val baseFilePath = File(uncompressedFileName).name
                     val uncompressedDirPath: Path = fileSystem!!.getPath(uncompressedFileName.replace( baseFilePath.toString(),""))
 
                     if ( !Files.exists( uncompressedDirPath )) {
@@ -268,7 +266,7 @@ class DecompressFast(private val _zipFile: String, private val _location: String
                     logInfo("Unzipping Directory: " + ze!!.name)
                 } else {
                     logInfo("Unzipping File: " + ze!!.name)
-                    val baseFilePath = basename(ze!!.name)
+                    val baseFilePath = File(ze!!.name).name
                     val outDirPath = ze!!.name.replace( baseFilePath.toString() , "")
                     _dirChecker(outDirPath)
 
