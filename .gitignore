@@ -30,3 +30,4 @@ gradle-app.setting
 /*.jar
 /instructions.txt
 /*.json
+test.txt
