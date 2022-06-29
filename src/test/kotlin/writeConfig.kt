@@ -11,6 +11,7 @@ import java.util.*
 fun main() {
 
     var IP = "127.0.0.1"
+    var timezone = "UTC"
 
     //Get IP From Internet
     val ipv4Services = arrayOf(
@@ -22,39 +23,43 @@ fun main() {
         "https://myexternalip.com/raw",
     )
 
-    val ipv4Service = ipv4Services.get( (( Math.random() * ipv4Services.size ).toInt()) )
-    logInfo( "Use following IP-Service: $ipv4Service" )
-    try {
-        IP = BufferedReader(InputStreamReader(URL( ipv4Service ).openStream())).readLine()
-    } catch (ex: IOException) {} catch (ex: FileNotFoundException) {}
-
-    logInfo( "Public-IP is: $IP" )
-
     //Get IP From Config
     try {
         FileInputStream("server.properties").use { input ->
             val prop = Properties()
             prop.load(input)
-            if ( prop.getProperty("server-ip").isNotEmpty() )
+            if ( prop.getProperty("server-ip").isNotEmpty() ){
                 IP = prop.getProperty("server-ip")
+                logInfo( "Config-IP is: $IP" )
+            }
         }
     } catch (ex: IOException) {} catch (ex: FileNotFoundException) {}
 
-    logInfo( "Config-IP is: $IP" )
-
-
     //GET IP / WEBSITE TIMEZONE
-    var timezone = "UTC"
+    if( IP == "127.0.0.1" ) {
 
-    try {
-        val URL = URL("http://ip-api.com/csv/$IP?fields=status,timezone&lang=en")
-        val bufferedURL = BufferedReader(InputStreamReader(URL.openStream()))
-        val line = bufferedURL.readLine()
-        if ( line.contains("success,") ) {
-            timezone = line.replace("success,","" )
-        }
-        bufferedURL.close()
-    } catch (me: MalformedURLException) {} catch (ioe: IOException) {}
+        val ipv4Service = ipv4Services.get(((Math.random() * ipv4Services.size).toInt()))
+        logInfo("Use following IP-Service: $ipv4Service")
+        try {
+            IP = BufferedReader(InputStreamReader(URL(ipv4Service).openStream())).readLine()
+        } catch (ex: IOException) {} catch (ex: FileNotFoundException) {}
+
+        logInfo("Public-IP is: $IP")
+    }
+
+    if( IP != "127.0.0.1" ){
+
+        try {
+            val URL = URL("http://ip-api.com/csv/$IP?fields=status,timezone&lang=en")
+            val bufferedURL = BufferedReader(InputStreamReader(URL.openStream()))
+            val line = bufferedURL.readLine()
+            if ( line.contains("success,") ) {
+                timezone = line.replace("success,","" )
+            }
+            bufferedURL.close()
+        } catch (me: MalformedURLException) {} catch (ioe: IOException) {}
+
+    }
 
     logInfo( "Set Timezone to: $timezone" )
 
