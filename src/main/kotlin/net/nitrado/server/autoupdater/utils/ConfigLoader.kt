@@ -1,6 +1,8 @@
 package net.nitrado.server.autoupdater.utils
 
 import org.yaml.snakeyaml.Yaml
+import java.awt.GraphicsEnvironment
+import java.awt.HeadlessException
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
@@ -71,3 +73,14 @@ fun loadConfig(): Map<String, Any>? {
     val yaml = Yaml()
     return yaml.load<Map<String, Any>?>(configStream)
 }
+
+val isReallyHeadless: Boolean
+    get() = if (GraphicsEnvironment.isHeadless()) {
+        true
+    } else try {
+        val screenDevices = GraphicsEnvironment.getLocalGraphicsEnvironment().screenDevices
+        screenDevices == null || screenDevices.size == 0
+    } catch (e: HeadlessException) {
+        e.printStackTrace()
+        true
+    }

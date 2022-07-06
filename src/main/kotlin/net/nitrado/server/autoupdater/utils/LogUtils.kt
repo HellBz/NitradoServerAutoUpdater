@@ -1,8 +1,6 @@
 package net.nitrado.server.autoupdater.utils
 
 import config
-import java.awt.GraphicsEnvironment
-import java.awt.HeadlessException
 import java.io.FileWriter
 import java.io.IOException
 import java.io.PrintWriter
@@ -38,7 +36,6 @@ val BG_WHITE = "\u001B[47m"
 
 private val display = null
 
-
 fun logInfo(message: String) {
     println(currentTime() + TXT_GREEN + "[N-S-A/INFO] " + TXT_RESET + message)
     try {
@@ -47,7 +44,6 @@ fun logInfo(message: String) {
     } catch (e: IOException) {
         e.printStackTrace()
     }
-    //if ( display != null) display.append(CurrentTime() + "[F-S-S/INFO] " + cleanLog( message) + System.lineSeparator())
 }
 
 fun logWarn(message: String) {
@@ -57,7 +53,6 @@ fun logWarn(message: String) {
     } catch (e: IOException) {
         e.printStackTrace()
     }
-    //if (display != null) display.append(CurrentTime() + "[F-S-S/WARNING] " + cleanLog( message) + System.lineSeparator())
 }
 
 fun logError(message: String) {
@@ -67,7 +62,6 @@ fun logError(message: String) {
     } catch (e: IOException) {
         e.printStackTrace()
     }
-    //if (display != null) display.append(CurrentTime() + "[F-S-S/ERROR] " + cleanLog( message) + System.lineSeparator())
 }
 
 fun logDebug(message: String) {
@@ -78,7 +72,6 @@ fun logDebug(message: String) {
         } catch (e: IOException) {
             e.printStackTrace()
         }
-        //if (display != null) display.append(CurrentTime() + "[F-S-S/DEBUG] " + cleanLog( message) + System.lineSeparator())
     }
 }
 
@@ -104,14 +97,3 @@ fun doLog(message: String?) {
         printWriter.close()
     }
 }
-
-val isReallyHeadless: Boolean
-    get() = if (GraphicsEnvironment.isHeadless()) {
-        true
-    } else try {
-        val screenDevices = GraphicsEnvironment.getLocalGraphicsEnvironment().screenDevices
-        screenDevices == null || screenDevices.size == 0
-    } catch (e: HeadlessException) {
-        e.printStackTrace()
-        true
-    }
