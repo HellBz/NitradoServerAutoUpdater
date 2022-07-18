@@ -6,6 +6,7 @@ import net.nitrado.server.autoupdater.utils.installCurseLoader
 import net.nitrado.server.autoupdater.utils.logInfo
 import net.nitrado.server.autoupdater.utils.mainDir
 import java.io.File
+import kotlin.system.exitProcess
 
 
 fun main() {
@@ -18,9 +19,43 @@ fun main() {
 
     currentLoader.cache = "ftb"
 
-    val ftbArray = arrayOf( "public", "modpack", "96", "2137" )
+    currentLoader.currentVersion = "96"
 
-    println( ftbArray.toString() );
+    val ftbVersionArray = arrayOf( "public", "modpack", currentLoader.currentVersion.toString() )
+
+    var ftbVersionData = currentLoader.api( ftbVersionArray )
+
+    val ftbVersionObj = JsonParser().parse(ftbVersionData["data"].toString()).asJsonObject
+
+    if (ftbVersionObj.isJsonObject) {
+
+        val ftbVersion = ftbVersionObj["versions"] as JsonArray
+
+        for (j in 0 until ftbVersion.size() ) {
+
+            val ftbGetVersion = ftbVersion[j] as JsonObject
+            val type = ftbGetVersion.get("type").toString().substring(1, ftbGetVersion.get("type").toString().length - 1  ).toLowerCase()
+            val id =   ftbGetVersion.get("id")
+
+            logInfo( ftbGetVersion.toString() )
+
+            if ( type == "release" ){
+
+                //logInfo( type )
+
+                //logInfo( id.toString() )
+
+                currentLoader.currentBuild = id.toString()
+
+                break
+            }
+
+
+        }
+
+    }
+
+    val ftbArray = arrayOf( "public", "modpack", currentLoader.currentVersion.toString() , currentLoader.currentBuild.toString() )
 
     var response = currentLoader.api( ftbArray )
 
@@ -37,25 +72,31 @@ fun main() {
             var url =   entry_obj.get("url").toString().substring(1, entry_obj.get("url").toString().length - 1  )
             var name =  entry_obj.get("name").toString().substring(1, entry_obj.get("name").toString().length - 1  )
 
-            println(path)
-            println(url)
-            println(name)
+            //println(path)
+            //println(url)
+            //println(name)
 
             var toDir = "$mainDir/testtesttest/"+ path
             toDir = installPath + path
 
             var toFile = name
-            println( toDir + toFile  )
 
+
+            logInfo( "╥► Count Files: " + j.toString() + "/" + curseFiles.size().toString() )
 
             val theDir = File(toDir)
             if (!theDir.exists()) {
                 theDir.mkdirs()
-                println("CreateDirectory before File: " + toDir )
+                logInfo( "╠► Create Directory $toDir")
             }
 
+
+            logInfo( "╠► Download File: $name"  )
+            logInfo( "╠► To Folder: $path")
+            logInfo( "╚► From URL: $url")
+
             downloadFile( url  , toDir +  toFile )
-            println( "----------------------------------" )
+            //println( "----------------------------------" )
         }
 
         val gettargets = curseObj.get("targets").asJsonArray

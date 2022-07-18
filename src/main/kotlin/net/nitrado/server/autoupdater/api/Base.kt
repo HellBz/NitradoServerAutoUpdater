@@ -35,7 +35,11 @@ open class Base {
 
     open var localVersion: String? = null
 
+    open var localBuild: String? = null
+
     open var currentVersion: String? = null
+
+    open var currentBuild: String? = null
 
     open var downloadFile: String? = null
 
