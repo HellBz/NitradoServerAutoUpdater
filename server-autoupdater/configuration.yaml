@@ -1,0 +1,36 @@
+#
+# Server Auto-Updater
+#
+# written by HellBz
+#
+
+# From wich Launcher is the Pack  [curse|technic|ftblauncher|atlauncher]
+# Or for Server-Side Scripting    [vanilla|spigot|bikkit|paper|purpur|verlocity|mohist|spongevanilla]
+# Or for Server-Side Modding      [forge!|magma|spongeforge]
+loader: curse
+
+# Put In Modpack-ID here
+version: 290913
+
+# If you like a specific Version,
+# put this in or leave blank for latest version
+build: ''
+
+# Zip Main-Folder
+folder: /
+
+# Enable AutoUpdate ( Disabled, if version != empty )
+autoupdate: false
+
+# Automatic set Eula to true
+eula: true
+
+# ggg
+timezone: Europe/Berlin
+
+# ggg
+log-to-file: true
+
+# ggg
+debug: false
+
