@@ -13,7 +13,9 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
+import java.util.*
 import java.util.regex.Pattern
+import kotlin.collections.LinkedHashMap
 
 class Curse () : Base() {
 
@@ -23,17 +25,17 @@ class Curse () : Base() {
 
     override var baseurl: String?  = "https://api.curseforge.com/v1/"
 
-    override var apiKey: String?   = "$2a$10\$nA5YAQ2zhPP779caRJp.Bua.8X0j/oGJ7xPQgJTaRYQLgF6Ou4PAq"
+    override var apiKey: String?   = Base64.getUrlDecoder().decode("JDJhJDEwJG5BNVlBUTJ6aFBQNzc5Y2FSSnAuQnVhLjhYMGovb0dKN3hQUWdKVGFSWVFMZ0Y2T3U0UEFx").toString()
 
     var latestServerID: String? = null
 
-    override fun jobGetCurrentVersion() {
+    override fun jobGetCurrentBuild() {
         var entry = JsonObject()
 
         //Check Version for Curse-Pack
-        val modpackID = config?.get("modpack-id") as Int
-        val curseArray = arrayOf("mods", modpackID.toString(), "files", "?pageSize=50")
+        val curseArray = arrayOf("mods", this.localVersion.toString(), "files", "?pageSize=50")
         val curse = this.api(curseArray)
+
         val curseObj = JsonParser().parse(curse["data"].toString()).asJsonObject
 
         // println(curseObj.isJsonObject)
@@ -55,8 +57,10 @@ class Curse () : Base() {
                 }
             }
         }
-        this.currentVersion = entry.get("id").toString()
+        this.currentBuild = entry.get("id").toString()
     }
+
+    /*
 
     override fun jobBackUpFiles() {
 
@@ -73,10 +77,12 @@ class Curse () : Base() {
 
     }
 
+     */
+
     override fun jobGetDownloadFile() {
-        val projektId = config?.get("modpack-id") as Int
+
         this.latestGetServerID()
-        val curseServerArray = arrayOf("mods",  projektId.toString() , "files", this.latestServerID.toString() ,  "download-url" )
+        val curseServerArray = arrayOf("mods",  this.localVersion.toString() , "files", this.latestServerID.toString() ,  "download-url" )
 
         val curseServer = this.api(curseServerArray)
         val curseServerObj = JsonParser().parse(curseServer["data"].toString()).asJsonObject
@@ -210,12 +216,12 @@ class Curse () : Base() {
 
     }
 
-    /*
+
     override fun jobStartServer(){
         logError("FAKE START Server" + this.startFile )
-        startServer("$userDir/" + this.startFile )
+        startServer("$userDir/" , this.startFile.toString() )
     }
-    */
+
 
     override fun api(requestArray: Array<String>): java.util.LinkedHashMap<String, String> {
 
@@ -262,6 +268,7 @@ class Curse () : Base() {
             try {
 
                 val url = URL(this.baseurl +"$sendRequest")
+                println( url )
                 val http = url.openConnection() as HttpURLConnection
                 http.requestMethod = "GET"
                 http.setRequestProperty("Accept", "application/json")
@@ -384,7 +391,7 @@ class Curse () : Base() {
         var entry = JsonObject()
 
         //Check Version for Curse-Pack
-        var modpackID = config?.get("modpack-id") as Int
+        var modpackID = config?.get("version") as Int
         val curseArray = arrayOf("mods", modpackID.toString(), "files", "?pageSize=50")
         val curse = this.api(curseArray)
         val curseObj = JsonParser().parse(curse["data"].toString()).asJsonObject

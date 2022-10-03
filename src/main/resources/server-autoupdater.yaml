@@ -10,14 +10,14 @@
 loader: curse
 
 # Put In Modpack-ID here
-modpack-id: 290913
-
-# Zip Main-Folder
-modpack-folder: /
+version: 290913
 
 # If you like a specific Version,
 # put this in or leave blank for latest version
-version: ''
+build: ''
+
+# Zip Main-Folder
+folder: /
 
 # Enable AutoUpdate ( Disabled, if version != empty )
 autoupdate: false

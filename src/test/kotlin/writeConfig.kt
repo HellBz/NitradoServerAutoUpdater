@@ -66,7 +66,7 @@ fun main() {
     //Write Config
     try {
         val writer = BufferedWriter(FileWriter("test.txt"))
-        FileUtils::class.java.classLoader.getResourceAsStream(configFileName).use { inputStream ->
+        FileUtils::class.java.classLoader.getResourceAsStream("server-autoupdater.yaml").use { inputStream ->
             InputStreamReader(inputStream, StandardCharsets.UTF_8).use { streamReader ->
                 BufferedReader(streamReader).use { reader ->
                     var line: String?

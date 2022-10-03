@@ -1,6 +1,5 @@
 .gradle
 /build/
-.idea/
 
 # Ignore Gradle GUI config
 gradle-app.setting
@@ -15,19 +14,6 @@ gradle-app.setting
 # gradle/wrapper/gradle-wrapper.properties
 /.idea/
 /out/
-/test/
-/test-kopie/
-/server-autoupdater/*
 
-#Exclude Server-Files
-/config/*
-/mods/*
-/logs/*
-/scripts/*
-/libraries/*
-/server.properties
-/eula.txt
-/*.jar
-/instructions.txt
-/*.json
-test.txt
+#Exclude Server Test Files
+/test/

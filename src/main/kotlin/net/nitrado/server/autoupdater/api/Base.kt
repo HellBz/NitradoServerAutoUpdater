@@ -15,6 +15,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.regex.Pattern
 import kotlin.system.exitProcess
 
 
@@ -24,27 +25,27 @@ import kotlin.system.exitProcess
 open class Base {
 
     open var doupdate = false
+    open var autoUpdate = false
 
     open var name: String = "Base-Loader"
 
+    //Setup API-Stuff
     open var cache: String?    = "base"
-
     open var baseurl: String?  = "https://mineversion.top"
-
     open var apiKey: String?   = "no_key"
 
-    open var localVersion: String? = null
 
+    //Setup Local Variables
+    open var localVersion: String? = null
     open var localBuild: String? = null
 
+    //Setup current/live Variables
     open var currentVersion: String? = null
-
     open var currentBuild: String? = null
 
+    //Setup some Files
     open var downloadFile: String? = null
-
     open var installFile: String? = null
-
     open var startFile: String? = null
 
 
@@ -72,54 +73,56 @@ open class Base {
         logInfo("$TXT_YELLOW| | |  |_ | (_|(_|(_) o | |(/_ |_$TXT_RESET")
         logInfo("-----------------------------------------------")
 
+        println( System.getenv("CURSE_FORGE_API_KEY") )
+
     }
 
-    open fun jobCreateMainConfig() {
-        if (!copyConfigFromResource("server-autoupdater.yaml", "$mainDir/server-autoupdater.yaml")) {
-            logWarn("Created Main-Config: $mainDir/sample_test.json")
-            logWarn("Please Setup your Configuration-File, Exit Program.")
-            System.exit(0)
-        }
-    }
+    open fun jobGetLocalConfig() {
 
-    open fun jobGetLocalVersion() {
+        logInfo("Start Loader for " + this.name )
+
         val latestYaml = loadYAMLConfig("$mainDir/latest.yaml")
-        if( latestYaml != null ) this.localVersion = latestYaml.get("latest").toString()
+        if( latestYaml != null ) this.localBuild = latestYaml.get("build").toString()
 
-        if ( this.localVersion == null ) {
+        this.localVersion = config?.get("version").toString()
+        this.autoUpdate = config?.get("autoupdate") as Boolean
+
+        if ( this.localBuild == null ) {
             logInfo("Latest Version cannot be found, checking for Updates.")
             this.doupdate = true
         }else{
-            logInfo("Found latest Version of Modpack: " + this.localVersion )
+            logInfo("Found latest Build of Modpack: " + this.localBuild )
         }
     }
 
-    open fun jobGetCurrentVersion(): Any = Unit
+    open fun jobGetCurrentBuild(): Any = Unit
 
-    open fun jobDoUpdateYesOrNo() {
-        if (this.doupdate || config?.get("autoupdate") == true) {
+    open fun jobDoUpdateYesOrNo(): Boolean {
+        if (this.doupdate || autoUpdate ) {
 
             this.doupdate = false
             logInfo("Checking for latest Version of " + this.name )
 
-            this.jobGetCurrentVersion()
+            this.jobGetCurrentBuild()
 
-            logInfo("Last Build is " + this.localVersion)
-            logInfo("Last Server Build is " + this.currentVersion)
+            logInfo("Last Build is " + this.localBuild )
+            logInfo("Last Server Build is " + this.currentBuild )
 
-            if (this.currentVersion != this.localVersion) {
-                this.jobWriteLatestVersionToFile()
+            if (this.currentBuild != this.localBuild ) {
                 this.doupdate = true
+                return true
             } else {
-                logInfo("Target-Build is: " + this.localVersion + " and Source-Build is: " + this.currentVersion)
+                logInfo("Target-Build is: " + this.localBuild + " and Source-Build is: " + this.currentBuild )
                 logInfo("Exit Auto-Updater, because Versions are the same.")
+                return false
             }
         }
+        else return false
     }
 
-    open fun jobWriteLatestVersionToFile() {
+    open fun jobWriteCurrentBuildToFile() {
         val yamlConfigData: MutableMap<String, Int> = HashMap()
-        yamlConfigData["latest"] = Integer.parseInt( this.currentVersion )
+        yamlConfigData["build"] = Integer.parseInt( this.currentBuild )
         val options = DumperOptions()
         options.indent = 2
         options.isPrettyFlow = true
@@ -130,7 +133,36 @@ open class Base {
         yaml.dump(yamlConfigData, writer)
     }
 
-    open fun jobBackUpFiles(): Any = Unit
+    open fun jobBackUpFiles() {
+
+        logInfo("Start creating Backup of existing Files to:")
+        var backup_zip = "$backupDir/" + this.cache + "_" + this.localVersion + "_" + this.localBuild + ".zip"
+        logInfo("$backup_zip")
+        try {
+            val directory: File = File( "$userDir/$backupDir/" )
+            if (!directory.exists()) directory.mkdirs()
+            ZipFileExample.zip("$userDir/", "$backup_zip")
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+
+    }
+
+    open fun jobEraseTemp() {
+        var temp = "$mainDir/temp/"
+        val tempDatas = listFilesinDirectory( temp )
+
+        tempDatas["files"]?.forEach { file -> file
+            val toFile: File = File("$temp/$file")
+            if ( toFile.exists() ) Files.delete( toFile.toPath() )
+        }
+
+        tempDatas["dirs"]?.forEach { dir -> dir
+             val toDir: File = File("$temp/$dir")
+             if (toDir.exists()) deleteDirectory(toDir)
+        }
+
+    }
 
     open fun jobGetDownloadFile(): Any = Unit
 
@@ -140,7 +172,35 @@ open class Base {
 
     open fun jobFindInstaller(): Any = Unit
 
-    open fun jobCleanUpTemp(): Any = Unit
+    open fun jobCleanUpTemp() {
+
+        //For Now, Just Files
+        val tempDatas = listFilesinDirectory("$mainDir/temp/")
+
+        tempDatas["files"]?.forEach { file ->
+            file
+
+            val matchForge = Pattern.compile("forge-([.0-9]+)-([.0-9]+).([jar]+)").matcher(file)
+
+            if (
+                file.contains("user_jvm_args.txt") ||
+                (
+                        getExt(file).toString() != "properties" &&
+                                getExt(file).toString() != "json" &&
+                                getExt(file).toString() != "txt" &&
+                                !matchForge.find() &&
+                                jarName != file
+                        )
+
+            ) {
+
+                logInfo("Cleanup TEMP File: $file")
+                val toFile: File = File("$mainDir/temp/$file")
+                if (toFile.exists()) Files.delete(toFile.toPath())
+
+            }
+        }
+    }
 
     open fun jobCleanUpServer(): Any = Unit
 
@@ -189,7 +249,7 @@ open class Base {
 
     open fun jobStartServer() {
 
-        startServer("$userDir/" + this.startFile )
+        startServer("$userDir/" , this.startFile.toString() )
 
         //TODO REMOVE THIS
 
@@ -317,6 +377,9 @@ open class Base {
                 http.requestMethod = "GET"
                 http.setRequestProperty("Accept", "application/json")
                 http.setRequestProperty("x-api-key", this.apiKey )
+                var httpAgent = "mineversion.top PHP-API-Bot by HellBz (+https://hellbz.de/contact/)"
+                http.setRequestProperty("User-Agent", httpAgent);
+                System.setProperty("http.agent", httpAgent);
 
                 responseCode = http.responseCode.toString()
                 responseMessage = http.responseMessage

@@ -1,7 +1,7 @@
 package net.nitrado.server.autoupdater.utils
 
-import java.io.File
-import kotlin.math.log
+import java.lang.reflect.Constructor
+import java.lang.reflect.Method
 
 
 class DataUtils {
@@ -46,4 +46,31 @@ fun doesClassExist(name: String?): Boolean {
         e.printStackTrace()
     }
     return false
+}
+
+class JavaClassLoader : ClassLoader() {
+    fun invokeClassMethod(classBinName: String?, methodName: String?) {
+        try {
+
+            // Create a new JavaClassLoader
+            val classLoader = this.javaClass.classLoader
+
+            // Load the target class using its binary name
+            val loadedMyClass = classLoader.loadClass(classBinName)
+            println("Loaded class name: " + loadedMyClass.name)
+
+            // Create a new instance from the loaded class
+            val constructor = loadedMyClass.getConstructor()
+            val myClassObject: Any = constructor.newInstance()
+
+            // Getting the target method from the loaded class and invoke it using its name
+            val method: Method = loadedMyClass.getMethod(methodName)
+            System.out.println("Invoked method name: " + method.getName())
+            method.invoke(myClassObject)
+        } catch (e: ClassNotFoundException) {
+            e.printStackTrace()
+        } catch (e: java.lang.Exception) {
+            e.printStackTrace()
+        }
+    }
 }

@@ -9,6 +9,7 @@ import java.nio.file.Paths
 import java.time.Instant
 import java.util.*
 
+
 class FileUtils {
 }
 
@@ -32,19 +33,22 @@ fun downloadFile(dowloadFile: String, toFile: String? = null ){
         toLocalFile = File(dowloadFile).name
     }
 
-
-    try {
-        BufferedInputStream( URL(dowloadFile).openStream() ).use { `in` ->
-            FileOutputStream(toLocalFile).use { fileOutputStream ->
-                val dataBuffer = ByteArray(1024)
-                var bytesRead: Int
-                while (`in`.read(dataBuffer, 0, 1024).also { bytesRead = it } != -1) {
-                    fileOutputStream.write(dataBuffer, 0, bytesRead)
+    if (!File(toLocalFile).exists()) {
+        try {
+            BufferedInputStream( URL(dowloadFile).openStream() ).use { `in` ->
+                FileOutputStream(toLocalFile).use { fileOutputStream ->
+                    val dataBuffer = ByteArray(1024)
+                    var bytesRead: Int
+                    while (`in`.read(dataBuffer, 0, 1024).also { bytesRead = it } != -1) {
+                        fileOutputStream.write(dataBuffer, 0, bytesRead)
+                    }
                 }
             }
+        } catch (e: IOException) {
+            // handle exception
         }
-    } catch (e: IOException) {
-        // handle exception
+    } else{
+        println( "File Already exist!" )
     }
 }
 
@@ -165,25 +169,28 @@ fun copyDirectory(sourceDirectoryLocation: String, destinationDirectoryLocation:
 fun installCurseLoader( installerFile: String ): Boolean {
 
     try {
-        val inputFile = File(installerFile)
 
-        val filename = inputFile.name
-        val basepath = installerFile.replace( filename , "" )
+        val filename = File(installerFile).name
+        val basePath = installerFile.replace( filename.toString() , "" )
 
-        logInfo("Attempting to use installer from $filename")
+        logInfo("Attempting to start Server $installerFile")
+        logInfo("Filename: $filename")
+        logInfo("Directory: $basePath")
+
+        logInfo("Attempting to use installer from $basePath")
 
         logInfo("Starting installation of Loader, installer output incoming")
-        logInfo("Check log for installer for more information")
+        logInfo("Check log from installer for more information")
 
         val installer = ProcessBuilder(
             "java",
             "-jar",
-            installerFile,
+            filename,
             "nogui",
             "--installServer",
         )
             /* .inheritIO() */
-            .directory( File( basepath ) )
+            .directory( File( basePath ) )
             .start()
 
         val serverLog = Scanner(installer!!.inputStream)
@@ -198,20 +205,22 @@ fun installCurseLoader( installerFile: String ): Boolean {
 
         logInfo( "Delete: $installer ")
 
+
+
         val installerFile: File = File("$installerFile" )
         if( installerFile.exists() )  Files.delete( installerFile.toPath() )
 
         val installerFileLog: File = File("$installerFile.log" )
         if( installerFileLog.exists() )  Files.delete( installerFileLog.toPath() )
 
-        val installerFileRunBat: File = File( basepath + "run.bat" )
+        val installerFileRunBat: File = File( basePath + "run.bat" )
         if( installerFileRunBat.exists() )  Files.delete( installerFileRunBat.toPath() )
 
 
-        val installerFileRunSh: File = File( basepath + "run.sh" )
+        val installerFileRunSh: File = File( basePath + "run.sh" )
         if( installerFileRunSh.exists() )  Files.delete( installerFileRunSh.toPath() )
 
-        val installerFileJavaArgs: File = File( basepath + "user_jvm_args.txt" )
+        val installerFileJavaArgs: File = File( basePath + "user_jvm_args.txt" )
         if( installerFileJavaArgs.exists() )  Files.delete( installerFileJavaArgs.toPath() )
 
         return true
@@ -229,45 +238,87 @@ fun installCurseLoader( installerFile: String ): Boolean {
 
 }
 
-fun startServer( installerFile: String ): Boolean {
+fun startServer( startFolder: String , startFile: String ): Boolean {
 
-
+    println( File("$startFolder").absoluteFile )
 
     try {
-        logInfo("Attempting to start Server $installerFile")
 
-        val filename = File(installerFile).name
-        if ( filename != null) {
-            throw FileNotFoundException();
+        logInfo("Attempting to start Server $startFolder")
+        logInfo("Filename: $startFile")
+        logInfo("Directory: $startFolder")
+
+        logInfo("Starting installation of Loader, installer output incoming")
+        logInfo("Check log from installer for more information")
+
+        val array = arrayOf("java", startFile , "nogui").toString()
+
+        val vsArrays: MutableList<String> = ArrayList()
+        vsArrays.add("java")
+        if ( !startFile.startsWith("@") ) vsArrays.add("-jar")
+        vsArrays.add( startFile )
+        vsArrays.add("nogui")
+
+
+        val installer = ProcessBuilder( vsArrays )
+            .inheritIO()
+            .directory( File("$startFolder") )
+            .start()
+
+        val serverLog = Scanner(installer!!.inputStream)
+        while (serverLog.hasNextLine()) {
+            val println = serverLog.nextLine()
+            println( println )
         }
-        val basepath = installerFile.replace( filename.toString() , "" )
+
+        installer.waitFor()
+
+        logInfo("Done executing Server.")
+
+        return true
+
+    } catch (e: IOException) {
+        logError("Problem while starting Server from $startFolder $e")
+        //throw DownloadLoaderException("Problem while installing Loader from $url", e)
+        return false
+    } catch (e: InterruptedException) {
+        logError("Problem while starting Server from $startFolder $e")
+        //throw DownloadLoaderException("Problem while installing Loader from $url", e)#
+        return false
+    }
+
+
+}
+fun startServer_old( startFolder: String, startFile: String): Boolean {
+
+    try {
+        logInfo("Attempting to start Server $startFile @  $startFolder" )
 
         serverProcess = ProcessBuilder(
-            "C:\\Program Files\\Java\\jre1.8.0_311\\bin\\javaw.exe",
+            "java",
             /*"java",*/
             "-Xmx5G",
             "-Xms1G",
             "-jar",
-            installerFile,
+            startFile,
             "nogui",
         )
-            /* .inheritIO() */
-            .directory(File("$basepath"))
+            /*.inheritIO()*/
+            .directory( File( startFolder ) )
             .start()
 
-
-        //logInfo("Servert is Crashed")
+        //logInfo("Server is Crashed")
 
         return true
 
     } catch (e: FileNotFoundException) {
-        logError("The Start-File \"" + File(installerFile).name + "\" not exits. Error: $e")
+        logError("The Start-File \"$startFile\" not exits. Error: $e")
         return false
     }catch (e: IOException) {
-        logError("Problem while start Server from \"" + File(installerFile).name + "\" $e")
+        logError("Problem while start Server from \"$startFile\" $e")
         return false
     } catch (e: InterruptedException) {
-        logError("Problem while start Server from \"" + File(installerFile).name + "\" $e")
+        logError("Problem while start Server from \"$startFile\" $e")
         return false
     }
 

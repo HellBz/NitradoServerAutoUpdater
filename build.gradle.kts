@@ -25,10 +25,17 @@ tasks.test {
     useJUnit()
 }
 
+
 tasks.jar {
+
+    println( "Build ${archiveBaseName.get()}" )
+    //archiveFileName.set("${archiveBaseName.get()}.${archiveExtension.get()}")
+    archiveFileName.set("minecraft_server.${archiveExtension.get()}")
+
     manifest {
         attributes["Main-Class"] = "ServerAutoUpdaterKt"
     }
+
     configurations["compileClasspath"].forEach { file: File ->
         from(zipTree(file.absoluteFile))
     }
